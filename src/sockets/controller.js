@@ -1,11 +1,9 @@
 const { Socket } = require('socket.io');
 const { comprobarJWTSocket } = require('../helpers/JWT');
 
-
 let socketIo;
 
 const socketController = (socket = new Socket(), io) => {
-
     socketIo = io;
 
     console.log('Cliente conectado', socket.id);
@@ -14,7 +12,7 @@ const socketController = (socket = new Socket(), io) => {
         console.log('Cliente desconectado', socket.id);
     });
 
-    const [validar, uid] = comprobarJWTSocket(socket.handshake.query['my-custom-header'])
+    const [validar, uid] = comprobarJWTSocket(socket.handshake.query['my-custom-header']);
 
     if (!validar) {
         return socket.disconnect();
@@ -26,10 +24,16 @@ const socketController = (socket = new Socket(), io) => {
 }
 
 const emitId = (id, data) => {
-
     socketIo.to(id).emit('newDataSensores', data);
+    notifySensorUpdate(id, data);
 }
 
+const notifySensorUpdate = (id, data) => {
+    socketIo.to(id).emit('sensorUpdateNotification', {
+        message: 'Sensores actualizados',
+        data: data
+    });
+}
 
 module.exports = {
     socketController,
