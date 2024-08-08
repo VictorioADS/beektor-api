@@ -8,7 +8,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://beektor.vercel.app", // Reemplaza con el dominio de tu frontend
+    origin: "*", // Reemplaza con el dominio de tu frontend
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
