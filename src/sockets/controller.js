@@ -1,37 +1,54 @@
-const { Socket } = require('socket.io');
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const { comprobarJWTSocket } = require('../helpers/JWT');
 
+const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "https://beektor.vercel.app", // Reemplaza con el dominio de tu frontend
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  }
+});
 
 let socketIo;
 
-const socketController = (socket = new Socket(), io) => {
+const socketController = (socket, io) => {
+  socketIo = io;
 
-    socketIo = io;
+  console.log('Cliente conectado', socket.id);
 
-    console.log('Cliente conectado', socket.id);
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado', socket.id);
+  });
 
-    socket.on('disconnect', () => {
-        console.log('Cliente desconectado', socket.id);
-    });
+  const [validar, uid] = comprobarJWTSocket(socket.handshake.query['my-custom-header']);
 
-    const [validar, uid] = comprobarJWTSocket(socket.handshake.query['my-custom-header'])
+  if (!validar) {
+    return socket.disconnect();
+  }
 
-    if (!validar) {
-        return socket.disconnect();
-    }
+  socket.join(uid);
 
-    socket.join(uid);
-
-    console.log('Cliente autenticado', uid);
-}
+  console.log('Cliente autenticado', uid);
+};
 
 const emitId = (id, data) => {
+  socketIo.to(id).emit('newDataSensores', data);
+};
 
-    socketIo.to(id).emit('newDataSensores', data);
-}
+io.on('connection', (socket) => {
+  socketController(socket, io);
+});
 
+server.listen(3000, () => {
+  console.log('listening on *:3000');
+});
 
 module.exports = {
-    socketController,
-    emitId
-}
+  emitId
+};
